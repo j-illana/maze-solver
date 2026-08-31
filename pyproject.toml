@@ -1,0 +1,20 @@
+[project]
+name = "maze-solver"
+
+[tool.pyside6-project]
+files = [
+    "main.py",
+
+    "viewmodel/maze_viewmodel.py",
+
+    "view/App/ContentArea.qml",
+    "view/App/Main.qml",
+    "view/App/MazeCell.qml",
+    "view/App/MazeGrid.qml",
+    "view/App/MazeWrapper.qml",
+    "view/App/qmldir",
+    "view/App/SideBar.qml",
+    "view/App/SideBarButton.qml",
+    "view/Style/Colors.qml",
+    "view/Style/qmldir"
+]
