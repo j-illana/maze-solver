@@ -16,4 +16,5 @@ QtObject {
     readonly property color mazeFloorWater: "#7EA3CC"
     readonly property color mazeStart: "#F67728"
     readonly property color mazeGoal: "#0C6F32"
-}
+    readonly property color mazePath: "#F1C40F"
+}

@@ -18,7 +18,7 @@ Rectangle {
     }
 
     ColumnLayout {
-        anchors.top: parent.top
+        anchors.top: parent.top1
         anchors.left: parent.left
         anchors.right: parent.right
         spacing: 0
@@ -44,7 +44,7 @@ Rectangle {
             text: "Resolver laberinto"
             expanded: root.expanded
 
-            onClicked: mazeFileDialog.open()
+            onClicked: MazeViewModel.solve_ucs()
         }
 
         SideBarButton {

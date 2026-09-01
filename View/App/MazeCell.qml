@@ -24,6 +24,8 @@ Rectangle {
                 return Colors.mazeCellEmpty1
             case "2":
                 return Colors.mazeCellEmpty2
+            case "*":
+                return Colors.mazePath
         }
     }
 }
