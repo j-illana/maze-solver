@@ -27,14 +27,17 @@ files = [
 ]
 
 [tool.pyright]
+pythonVersion = "3.14"
+pythonPath = "C:/Python314/python.exe"
 reportMissingImports = "none"
+reportMissingModuleSource = "none"
 extraPaths = [
-    "C:/Python314/Lib/site-packages",
-    "C:/Users/Brando WhiteNoise/AppData/Roaming/Python/Python314/site-packages"
+    "C:/Users/Brando WhiteNoise/AppData/Roaming/Python/Python314/site-packages",
+    "C:/Python314/Lib/site-packages"
 ]
 
 [tool.pyrefly]
 site-packages = [
-    "C:/Python314/Lib/site-packages",
-    "C:/Users/Brando WhiteNoise/AppData/Roaming/Python/Python314/site-packages"
+    "C:/Users/Brando WhiteNoise/AppData/Roaming/Python/Python314/site-packages",
+    "C:/Python314/Lib/site-packages"
 ]
