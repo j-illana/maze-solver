@@ -7,9 +7,26 @@ RowLayout {
     id: root
     spacing: 0
 
-    MazeWrapper {
+    ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
+        Layout.preferredWidth: 3
+
+        spacing: 0
+
+        MazeContainer {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.preferredHeight: 3
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.preferredHeight: 1
+
+            color: Colors.background
+        }
     }
 
     FlowPanel {

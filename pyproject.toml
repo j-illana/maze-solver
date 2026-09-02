@@ -7,15 +7,21 @@ files = [
 
     "viewmodel/maze_viewmodel.py",
 
+    "view/App/AlgorithmSelector.qml",
+    "view/App/ConfigurationArea.qml",
     "view/App/ContentArea.qml",
     "view/App/Main.qml",
     "view/App/MazeCell.qml",
+    "view/App/MazeContainer.qml",
     "view/App/MazeGrid.qml",
     "view/App/MazeWrapper.qml",
     "view/App/FlowPanel.qml",
+    "view/App/PathCell.qml",
+    "view/App/PathGrid.qml",
     "view/App/qmldir",
     "view/App/SideBar.qml",
     "view/App/SideBarButton.qml",
+    "view/App/SimulationButton.qml",
     "view/Style/Colors.qml",
     "view/Style/qmldir"
 ]

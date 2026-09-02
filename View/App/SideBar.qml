@@ -35,6 +35,7 @@ Rectangle {
             icon.source: "../../assets/icons/upload_file.svg"
             text: "Cargar laberinto"
             expanded: root.expanded
+            enabled: !MazeViewModel.running
 
             onClicked: mazeFileDialog.open()
         }
@@ -43,6 +44,7 @@ Rectangle {
             icon.source: "../../assets/icons/graph.svg"
             text: "Resolver laberinto"
             expanded: root.expanded
+            enabled: !MazeViewModel.running
 
             onClicked: MazeViewModel.solve_ucs()
         }
@@ -59,6 +61,7 @@ Rectangle {
             icon.source: "../../assets/icons/bar_chart.svg"
             text: "Comparar algoritmos"
             expanded: root.expanded
+            enabled: !MazeViewModel.running
 
             onClicked: mazeFileDialog.open()
         }

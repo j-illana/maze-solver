@@ -1,7 +1,9 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Controls.Material
 import QtQuick.Layouts
 import QmlModules.ViewModel
+import View.Style
 
 ApplicationWindow {
     title: "Prueba"
@@ -9,6 +11,8 @@ ApplicationWindow {
     width: 1920
     height: 1080
     font.family: "JetBrains Mono"
+    Material.accent: Material.Blue
+    color: Colors.background
 
     RowLayout {
         anchors.fill: parent

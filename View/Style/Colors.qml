@@ -17,4 +17,9 @@ QtObject {
     readonly property color mazeStart: "#F67728"
     readonly property color mazeGoal: "#0C6F32"
     readonly property color mazePath: "#F1C40F"
-}
+
+    readonly property color currentCell: "#80FFDD1F"
+    readonly property color visitedCell: "#8001148D"
+    readonly property color unvisitedCell: "transparent"
+    readonly property color solutionPathCell: "#800A852B"
+}

@@ -17,20 +17,32 @@ Rectangle {
         visible: MazeViewModel.maze.length === 0
     }
 
-    MazeGrid {
-        id: grid
+    Item {
+        id: gridContainer
         anchors.centerIn: parent
         visible: MazeViewModel.maze.length > 0
 
         readonly property int mazeRows: MazeViewModel.maze.length
-        readonly property real cellSize: (columns > 0 && mazeRows > 0)
+        readonly property int mazeCols: (MazeViewModel.maze.length > 0 && MazeViewModel.maze[0].length > 0) ? MazeViewModel.maze[0].length : 1
+
+        readonly property real cellSize: (mazeCols > 0 && mazeRows > 0)
             ? Math.min(
-                parent.width * root.mazeScale / columns,
+                parent.width * root.mazeScale / mazeCols,
                 parent.height * root.mazeScale / mazeRows
             )
             : 0
 
-        width: columns * cellSize
+        width: mazeCols * cellSize
         height: mazeRows * cellSize
+
+        MazeGrid {
+            anchors.fill: parent
+        }
+
+        PathGrid {
+            anchors.fill: parent
+            rows: gridContainer.mazeRows
+            columns: gridContainer.mazeCols
+        }
     }
 }
