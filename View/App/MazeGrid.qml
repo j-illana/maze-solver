@@ -6,9 +6,6 @@ import QmlModules.ViewModel
 Grid {
     id: root
 
-    rows: 15
-    columns: 25
-
     readonly property var maze: MazeViewModel.maze
 
     Repeater {

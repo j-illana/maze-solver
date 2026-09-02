@@ -2,44 +2,50 @@ import QtQuick
 import QtQuick.Layouts
 import View.Style
 
-GridLayout {
-    rows: 2
-    columns: 2
+RowLayout {
+    spacing: 0
 
-    rowSpacing: 0
-    columnSpacing: 0
-
-    MazeWrapper {
-        Layout.row: 0
-        Layout.column: 0
-
+    ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
         Layout.preferredWidth: 3
-        Layout.preferredHeight: 2
+
+        spacing: 0
+
+        MazeContainer {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.preferredHeight: 3
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.preferredHeight: 1
+
+            color: Colors.background
+        }
     }
 
-    Rectangle {
-        Layout.row: 0
-        Layout.column: 1
-
-        Layout.rowSpan: 2
-
+    ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
         Layout.preferredWidth: 1
 
-        color: Colors.background
-    }
+        spacing: 0
 
-    Rectangle {
-        Layout.row: 1
-        Layout.column: 0
+        ConfigurationArea {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.preferredHeight: 1
+        }
 
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        Layout.preferredHeight: 1
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.preferredHeight: 5
 
-        color: Colors.background
+            color: Colors.background
+        }
     }
 }

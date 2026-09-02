@@ -1,9 +1,14 @@
 module View.App
 
-Main 1.0 Main.qml
-SideBar 1.0 SideBar.qml
-SideBarButton 1.0 SideBarButton.qml
+AlgorithmSelector 1.0 AlgorithmSelector.qml
+ConfigurationArea 1.0 ConfigurationArea.qml
 ContentArea 1.0 ContentArea.qml
+Main 1.0 Main.qml
 MazeGrid 1.0 MazeGrid.qml
 MazeCell 1.0 MazeCell.qml
-MazeWrapper 1.0 MazeWrapper.qml
+MazeContainer 1.0 MazeContainer.qml
+PathCell 1.0 PathCell.qml
+PathGrid 1.0 PathGrid.qml
+SideBar 1.0 SideBar.qml
+SideBarButton 1.0 SideBarButton.qml
+SimulationButton 1.0 SimulationButton.qml
