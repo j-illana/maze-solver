@@ -1,5 +1,5 @@
 import sys
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtWidgets import QApplication
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
 from ViewModel.maze_viewmodel import MazeViewModel
@@ -7,7 +7,7 @@ from ViewModel.maze_viewmodel import MazeViewModel
 if __name__ == "__main__":
     QQuickStyle.setStyle("Material")
 
-    app = QGuiApplication(sys.argv)
+    app = QApplication(sys.argv)
     engine = QQmlApplicationEngine()
 
     engine.addImportPath(sys.path[0])

@@ -8,10 +8,8 @@ Grid {
 
     readonly property var maze: MazeViewModel.maze
 
-    columns: (maze.length > 0 && maze[0].length > 0) ? maze[0].length : 1
-
     Repeater {
-        model: maze.length > 0 ? (maze.length * root.columns) : 0
+        model: root.rows * root.columns 
 
         MazeCell {
             required property int index
@@ -19,12 +17,20 @@ Grid {
             property int row: Math.floor(index / root.columns)
             property int column: index % root.columns
 
-            width: root.width / root.columns
-            height: root.height / (maze.length > 0 ? maze.length : 1)
+            property string cellEmptyColor:
+                (row + column) % 2 === 0
+                    ? "1"
+                    : "2"
 
-            cellType: (row < root.maze.length && column < root.maze[row].length)
+            property bool hasMazeData:
+                (row < root.maze.length) && (column < root.maze[row].length)
+
+            width: root.width / root.columns
+            height: root.height / root.rows
+
+            cellType: hasMazeData
                 ? root.maze[row][column]
-                : "."
+                : cellEmptyColor
         }
     }
 }

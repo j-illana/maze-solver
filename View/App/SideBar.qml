@@ -6,8 +6,13 @@ import View.Style
 
 Rectangle {
     id: root
+
+    signal solveMazeRequested()
+    signal compareAlgorithmsRequested()
+
     property bool expanded: false
     property real sideBarWidth: expanded ? 240 : 60
+
     Layout.preferredWidth: sideBarWidth
     color: Colors.sideBar
 
@@ -46,15 +51,7 @@ Rectangle {
             expanded: root.expanded
             enabled: !MazeViewModel.running
 
-            onClicked: MazeViewModel.solve_ucs()
-        }
-
-        SideBarButton {
-            icon.source: "../../assets/icons/terminal.svg"
-            text: "Flujo del programa"
-            expanded: root.expanded
-
-            onClicked: MazeViewModel.toggle_flow_panel()
+            onClicked: root.solveMazeRequested()
         }
 
         SideBarButton {
@@ -63,7 +60,7 @@ Rectangle {
             expanded: root.expanded
             enabled: !MazeViewModel.running
 
-            onClicked: mazeFileDialog.open()
+            onClicked: root.compareAlgorithmsRequested()
         }
     }
 

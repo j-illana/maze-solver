@@ -21,9 +21,13 @@ ApplicationWindow {
         SideBar {
             id: sideBar
             Layout.fillHeight: true
+
+            onSolveMazeRequested: contentArea.currentIndex = 0
+            onCompareAlgorithmsRequested: contentArea.currentIndex = 1
         }
 
         ContentArea {
+            id: contentArea
             Layout.fillWidth: true
             Layout.fillHeight: true
         }

@@ -4,7 +4,8 @@ from .graph import Graph
 from .search_status import SearchStatus
 from .search_algorithm import SearchAlgorithm
 from .dfs import DFS
-from .ucs import UCS, COSTOS_TERRENO
+from .bfs import BFS
+from .ucs import UCS
 
 __all__ = [
     "Direction",
@@ -14,6 +15,6 @@ __all__ = [
     "SearchStatus",
     "SearchAlgorithm",
     "DFS",
+    "BFS",
     "UCS",
-    "COSTOS_TERRENO",
 ]

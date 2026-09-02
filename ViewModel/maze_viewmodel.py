@@ -1,13 +1,15 @@
-from PySide6.QtCore import QObject, Slot, QUrl, Signal, Property, QTimer
+from PySide6.QtCore import QObject, Slot, QUrl, Signal, Property
 from PySide6.QtQml import QmlElement, QmlSingleton
-from Model.ucs import UCS
-from Model.dfs import DFS
 from Model.search_status import SearchStatus
 from Model.search_algorithm import SearchAlgorithm
+from Model.dfs import DFS
+from Model.bfs import BFS
+from Model.ucs import UCS
+from graph_visualizer import show_search_tree
+import time
 
 QML_IMPORT_NAME = "QmlModules.ViewModel"
 QML_IMPORT_MAJOR_VERSION = 1
-
 UNVISITED_NODE = 0
 VISITED_NODE = 1
 CURRENT_NODE = 2
@@ -17,32 +19,25 @@ PATH = 3
 @QmlSingleton
 class MazeViewModel(QObject):
     mazeChanged = Signal()
-    logChanged = Signal()
-    statsChanged = Signal()
-    flowPanelVisibleChanged = Signal()
-    errorOccurred = Signal(str)
     pathChanged = Signal()
+    dfsPathChanged = Signal()
+    bfsPathChanged = Signal()
+    ucsPathChanged = Signal()
     runningChanged = Signal()
+    errorOccurred = Signal(str)
 
     def __init__(self):
         super().__init__()
         self._maze = []
-        self._maze_original = []
-        self._maze_matrix = []
-        self._flow_panel_visible = True
-
-        self._log_text = "Esperando la carga de un laberinto..."
-        self._stats = {"costo": "-", "visitados": "-", "frontera": "-", "longitud": "-"}
-        self._status_message = "Inactivo"
-
-        # DFS / UCS properties
         self._path = []
+        self._dfsPath = []
+        self._bfsPath = []
+        self._ucsPath = []
         self._start: tuple[int, int] | None = None
         self._goals: list[tuple[int, int]] = []
         self._running = False
         self._algorithm: SearchAlgorithm | None = None
 
-    # --- Propiedades QML ---
     @Property("QVariantList", notify=mazeChanged)
     def maze(self):
         return self._maze
@@ -51,87 +46,85 @@ class MazeViewModel(QObject):
     def path(self):
         return self._path
 
+    @Property("QVariantList", notify=dfsPathChanged)
+    def dfsPath(self):
+        return self._dfsPath
+
+    @Property("QVariantList", notify=bfsPathChanged)
+    def bfsPath(self):
+        return self._bfsPath
+
+    @Property("QVariantList", notify=ucsPathChanged)
+    def ucsPath(self):
+        return self._ucsPath
+
     @Property(bool, notify=runningChanged)
     def running(self):
         return self._running
 
-    @Property(str, notify=logChanged)
-    def logText(self):
-        return self._log_text
-
-    @Property(bool, notify=flowPanelVisibleChanged)
-    def flowPanelVisible(self):
-        return self._flow_panel_visible
-
-    @Property(str, notify=statsChanged)
-    def statsCosto(self):
-        return self._stats["costo"]
-
-    @Property(str, notify=statsChanged)
-    def statsVisitados(self):
-        return self._stats["visitados"]
-
-    @Property(str, notify=statsChanged)
-    def statsFrontera(self):
-        return self._stats["frontera"]
-
-    @Property(str, notify=statsChanged)
-    def statsLongitud(self):
-        return self._stats["longitud"]
-
-    @Property(str, notify=statsChanged)
-    def statusMessage(self):
-        return self._status_message
 
     @Slot()
-    def toggle_flow_panel(self):
-        self._flow_panel_visible = not self._flow_panel_visible
-        self.flowPanelVisibleChanged.emit()
+    def reset_path(self):
+        self._path = [[UNVISITED_NODE for _ in row] for row in self._maze]
+
+        self.pathChanged.emit()
+
+    @Slot()
+    def reset_comparison_paths(self):
+        self._dfsPath = [[UNVISITED_NODE for _ in row] for row in self._maze]
+        self._bfsPath = [[UNVISITED_NODE for _ in row] for row in self._maze]
+        self._ucsPath = [[UNVISITED_NODE for _ in row] for row in self._maze]
+        self.dfsPathChanged.emit()
+        self.bfsPathChanged.emit()
+        self.ucsPathChanged.emit()
+
 
     @Slot(QUrl)
     def load_maze(self, file_url):
-        self._running = False
-        self._algorithm = None
-        self.runningChanged.emit()
-
-        file_path = file_url.toLocalFile()
-
-        with open(file_path, "r", encoding="utf-8") as file:
-            maze = file.read().splitlines()
-
-        if len(maze) > 15 or any(len(r) > 25 for r in maze):
-            self.errorOccurred.emit("Error: El laberinto excede el tamaño máximo (15x25).")
-            return
-
         start: tuple[int, int] | None = None
         goals: list[tuple[int, int]] = []
+        file_path = file_url.toLocalFile()
+
+        with open(file_path, "r") as file:
+            maze = file.read().splitlines()
+
+        if len(maze) > 15:
+            self.errorOccurred.emit(
+                "Error: El laberinto no puede tener más de 15 filas"
+            )
+            return
+
         for row_index, row in enumerate(maze):
+            if len(row) > 25:
+                self.errorOccurred.emit(
+                    "Error: El laberinto no puede tener más de 25 columnas"
+                )
+                return
+
             for column_index, cell in enumerate(row):
                 if cell == "S":
                     start = (row_index, column_index)
+
                 elif cell == "G":
                     goals.append((row_index, column_index))
 
-        self._maze_original = list(maze)
-        self._maze = list(maze)
+        if start is None:
+            self.errorOccurred.emit("Error: El laberinto no contiene entrada")
+            return
+
+        if not goals:
+            self.errorOccurred.emit("Error: El laberinto no contiene metas")
+            return
+
+        self._maze = maze
         self._start = start
         self._goals = goals
-        self._path = [[UNVISITED_NODE for _ in row] for row in maze]
+
+        self.reset_path()
+        self.reset_comparison_paths()
 
         self.mazeChanged.emit()
-        self.pathChanged.emit()
 
-        filename = file_path.replace("\\", "/").split("/")[-1]
-        self._stats = {"costo": "-", "visitados": "-", "frontera": "-", "longitud": "-"}
-        self._status_message = "Laberinto cargado"
-        self._log_text = (
-            f"[SISTEMA] Laberinto cargado exitosamente:\n"
-            f"  * Archivo: {filename}\n"
-            f"  * Dimensiones: {len(maze)} filas x {len(maze[0]) if maze else 0} columnas\n"
-            f"  * Selecciona un algoritmo para iniciar la búsqueda."
-        )
-        self.logChanged.emit()
-        self.statsChanged.emit()
 
     @Slot(str)
     def start_search(self, algorithm_name):
@@ -143,24 +136,34 @@ class MazeViewModel(QObject):
             self.errorOccurred.emit("Error: No hay entrada o metas en el laberinto")
             return
 
-        if algorithm_name == 'UCS':
-            self._algorithm = UCS(self._maze, self._start, self._goals)
-            self._status_message = "Buscando (UCS)"
-        elif algorithm_name == 'DFS':
-            self._algorithm = DFS(self._maze, self._start, self._goals)
-            self._status_message = "Buscando (DFS)"
+        if algorithm_name == "DFS":
+            self._algorithm = DFS(
+                self._maze,
+                self._start,
+                self._goals
+            )
+
+        elif algorithm_name == "BFS":
+            self._algorithm = BFS(
+                self._maze,
+                self._start,
+                self._goals
+            )
+
+        elif algorithm_name == "UCS":
+            self._algorithm = UCS(
+                self._maze,
+                self._start,
+                self._goals
+            )
+
         else:
             return
 
-        self._path = [[UNVISITED_NODE for _ in row] for row in self._maze]
+        self.reset_path()
         self._running = True
-        self.pathChanged.emit()
         self.runningChanged.emit()
-        self.statsChanged.emit()
 
-        if hasattr(self._algorithm, 'logs'):
-            self._log_text = "\n".join(self._algorithm.logs)
-            self.logChanged.emit()
 
     @Slot()
     def step_search(self):
@@ -170,48 +173,132 @@ class MazeViewModel(QObject):
         if self._algorithm.status != SearchStatus.SEARCHING:
             self._running = False
             self.runningChanged.emit()
+            self.show_results()
             return
 
         self._algorithm.step()
         self.update_path()
 
-        # Actualizar métricas y consola si es UCS
-        if isinstance(self._algorithm, UCS):
-            self._stats = {
-                "costo": str(self._algorithm.costo_total) if self._algorithm.status == SearchStatus.FOUND else str(self._algorithm.costos_g.get(self._algorithm.stack[-1][0].position, 0) if self._algorithm.stack else 0),
-                "visitados": str(self._algorithm.nodos_explorados),
-                "frontera": str(len(self._algorithm.pq)),
-                "longitud": str(len(self._algorithm.stack)) if self._algorithm.stack else "0"
-            }
-            self._log_text = "\n".join(self._algorithm.logs)
-            self.logChanged.emit()
-            self.statsChanged.emit()
+        if self._algorithm.status != SearchStatus.SEARCHING:
+            self._running = False
+            self.runningChanged.emit()
+            self.show_results()
+            print("-----------------------------------------")
 
-        if self._algorithm.status == SearchStatus.FOUND:
-            self._status_message = "¡Meta Alcanzada!"
-            self._running = False
-            self.runningChanged.emit()
-            self.statsChanged.emit()
-        elif self._algorithm.status == SearchStatus.NOT_FOUND:
-            self._status_message = "Sin solución"
-            self._running = False
-            self.runningChanged.emit()
-            self.statsChanged.emit()
+
+    @Slot(str)
+    def solve_algorithm(self, algorithm_name):
+        if not self._maze:
+            self.errorOccurred.emit("Error: Se debe cargar un laberinto primero")
+            return
+
+        if self._start is None or not self._goals:
+            self.errorOccurred.emit("Error: No hay entrada o metas en el laberinto")
+            return
+
+        if algorithm_name == "DFS":
+            self._algorithm = DFS(
+                self._maze,
+                self._start,
+                self._goals
+            )
+
+        elif algorithm_name == "BFS":
+            self._algorithm = BFS(
+                self._maze,
+                self._start,
+                self._goals
+            )
+
+        elif algorithm_name == "UCS":
+            self._algorithm = UCS(
+                self._maze,
+                self._start,
+                self._goals
+            )
+
+        else:
+            return
+
+        self.reset_path()
+
+        start_time = time.perf_counter()
+
+        while(self._algorithm.status == SearchStatus.SEARCHING):
+            self._algorithm.step()
+
+        end_time = time.perf_counter()
+
+        elapsed_time = end_time - start_time
+
+        self.update_path()
+        self.show_results()
+        print(f"Tiempo de ejecución: {elapsed_time} segundos")
+        print("-----------------------------------------")
+
+
+    @Slot()
+    def show_search_tree(self):
+        if self._algorithm is None:
+            self.errorOccurred.emit(
+                "Error: Primero se debe ejecutar un algoritmo"
+            )
+            return
+
+        show_search_tree(self._algorithm)
+
 
     def update_path(self):
         if self._algorithm is None:
             return
 
-        for node in self._algorithm.visited_nodes:
+        visited_nodes = self._algorithm.visited_nodes
+        current_node = self._algorithm.get_current_node()
+        solution_path = self._algorithm.get_solution_path()
+
+        for node in visited_nodes:
             self._path[node.row][node.column] = VISITED_NODE
 
-        if self._algorithm.stack:
-            current_node, _ = self._algorithm.stack[-1]
+        if current_node is not None:
             self._path[current_node.row][current_node.column] = CURRENT_NODE
 
         if self._algorithm.status == SearchStatus.FOUND:
-            for node, _ in self._algorithm.stack:
+            for node in solution_path:
                 self._path[node.row][node.column] = PATH
+
+            if isinstance(self._algorithm, DFS):
+                self._dfsPath = [row.copy() for row in self._path]
+                self.dfsPathChanged.emit()
+
+            elif isinstance(self._algorithm, BFS):
+                self._bfsPath = [row.copy() for row in self._path]
+                self.bfsPathChanged.emit()
+
+            elif isinstance(self._algorithm, UCS):
+                self._ucsPath = [row.copy() for row in self._path]
+                self.ucsPathChanged.emit()
 
         self.pathChanged.emit()
 
+
+    def show_results(self):
+        if self._algorithm is None:
+            return
+
+        algorithm_name = type(self._algorithm).__name__
+        solution_path = self._algorithm.get_solution_path()
+        steps_number = max(0, len(solution_path) - 1)
+        visited_order = self._algorithm.visited_order
+        visited_nodes = [node.position for node in visited_order]
+        cost = self._algorithm.get_path_cost()
+
+        print("\n-----------------------------------------")
+        print("Resultados")
+        print("-----------------------------------------")
+        print(f"Algoritmo elegido: {algorithm_name}")
+        print(f"Nodo de salida: {self._start}")
+        print(f"Nodos de meta: {self._goals}")
+        print(f"Longitud del camino: {steps_number}")
+        print(f"Costo total del camino: {cost}")
+        print(f"Cantidad de nodos visitados: {len(visited_nodes)}")
+        print(f"Nodos visitados: {visited_nodes}")

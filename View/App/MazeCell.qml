@@ -24,27 +24,6 @@ Rectangle {
                 return Colors.mazeCellEmpty1
             case "2":
                 return Colors.mazeCellEmpty2
-            case "*":
-                return Colors.mazePath
-            case "@":
-                return Colors.mazeStart
-            default:
-                return Colors.mazeFloorEmpty
         }
-    }
-
-    Behavior on color {
-        ColorAnimation {
-            duration: 100
-        }
-    }
-
-    Rectangle {
-        anchors.centerIn: parent
-        width: Math.min(parent.width, parent.height) * 0.45
-        height: width
-        radius: width / 2
-        color: Colors.mazePath
-        visible: root.cellType === "@"
     }
 }

@@ -5,13 +5,19 @@ import QmlModules.ViewModel
 
 Grid {
     id: root
-    readonly property var path: MazeViewModel.path
+    property var path: []
+
+    property int currentPage
+    property color solutionPathCell
 
     Repeater {
         model: root.rows * root.columns
 
         PathCell {
             required property int index
+            
+            currentPage: root.currentPage
+            solutionPathCell: root.solutionPathCell
 
             property int row: Math.floor(index / root.columns)
             property int column: index % root.columns
