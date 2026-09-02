@@ -31,7 +31,7 @@ class MazeViewModel(QObject):
         self._maze_matrix = []
         self._path_ucs = []
         self._current_step = 0
-        self._flow_panel_visible = False
+        self._flow_panel_visible = True
 
         self._log_text = "Esperando la carga de un laberinto..."
         self._stats = {"costo": "-", "visitados": "-", "frontera": "-", "longitud": "-"}
@@ -46,7 +46,7 @@ class MazeViewModel(QObject):
         self._start: tuple[int, int] | None = None
         self._goals: list[tuple[int, int]] = []
         self._running = False
-        self._algorithm: SearchAlgorithm | None = None
+        self._algorithm: DFS | None = None
 
     # --- Propiedades QML ---
     @Property("QVariantList", notify=mazeChanged)

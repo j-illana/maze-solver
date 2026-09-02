@@ -47,6 +47,14 @@ Rectangle {
         spacing: 12
 
         // ==========================================
+        // 0. SELECCIÓN DE ALGORITMO Y SIMULACIÓN
+        // ==========================================
+        ConfigurationArea {
+            Layout.fillWidth: true
+            implicitHeight: 90
+        }
+
+        // ==========================================
         // 1. TARJETA DE MÉTRICAS Y ESTADO
         // ==========================================
         Rectangle {

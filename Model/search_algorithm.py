@@ -1,6 +1,7 @@
 from Model.direction import Direction
 from Model.graph import Graph
 from Model.node import Node
+from Model.search_status import SearchStatus
 
 class SearchAlgorithm:
     def __init__(self, maze: list[str],
@@ -9,6 +10,12 @@ class SearchAlgorithm:
         self.start = start
         self.goals = goals
         self.graph = Graph()
+        self.status = SearchStatus.SEARCHING
+        self.visited_nodes: set[Node] = set()
+        self.stack: list[tuple[Node, int]] = []
+
+    def step(self):
+        pass
 
     def is_valid_position(self, row: int, column: int) -> bool:
         return (
