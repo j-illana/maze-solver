@@ -5,7 +5,7 @@ class Node:
         self.neighbors: list["Node"] = []
 
     @property
-    def position(self):
+    def position(self) -> tuple[int, int]:
         return self.row, self.column
 
     def add_neighbor(self, node: "Node"):

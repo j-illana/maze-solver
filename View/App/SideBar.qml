@@ -6,8 +6,13 @@ import View.Style
 
 Rectangle {
     id: root
+
+    signal solveMazeRequested()
+    signal compareAlgorithmsRequested()
+
     property bool expanded: false
     property real sideBarWidth: expanded ? 240 : 60
+
     Layout.preferredWidth: sideBarWidth
     color: Colors.sideBar
 
@@ -46,7 +51,7 @@ Rectangle {
             expanded: root.expanded
             enabled: !MazeViewModel.running
 
-            onClicked: mazeFileDialog.open()
+            onClicked: root.solveMazeRequested()
         }
 
         SideBarButton {
@@ -55,7 +60,7 @@ Rectangle {
             expanded: root.expanded
             enabled: !MazeViewModel.running
 
-            onClicked: mazeFileDialog.open()
+            onClicked: root.compareAlgorithmsRequested()
         }
     }
 

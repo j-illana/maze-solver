@@ -1,6 +1,7 @@
 module View.App
 
 AlgorithmSelector 1.0 AlgorithmSelector.qml
+CompareAlgorithmsView 1.0 CompareAlgorithmsView.qml
 ConfigurationArea 1.0 ConfigurationArea.qml
 ContentArea 1.0 ContentArea.qml
 Main 1.0 Main.qml
@@ -12,3 +13,4 @@ PathGrid 1.0 PathGrid.qml
 SideBar 1.0 SideBar.qml
 SideBarButton 1.0 SideBarButton.qml
 SimulationButton 1.0 SimulationButton.qml
+SolveMazeView 1.0 SolveMazeView.qml

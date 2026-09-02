@@ -7,6 +7,7 @@ files = [
 
     "viewmodel/maze_viewmodel.py",
 
+    "view/App/CompareAlgorithmsView.qml",
     "view/App/AlgorithmSelector.qml",
     "view/App/ConfigurationArea.qml",
     "view/App/ContentArea.qml",
@@ -20,6 +21,7 @@ files = [
     "view/App/SideBar.qml",
     "view/App/SideBarButton.qml",
     "view/App/SimulationButton.qml",
+    "view/App/SolveMazeView.qml",
     "view/Style/Colors.qml",
     "view/Style/qmldir"
 ]

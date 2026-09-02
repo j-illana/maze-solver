@@ -20,6 +20,8 @@ QtObject {
     readonly property color currentCell: "#80FFDD1F"
     readonly property color visitedCell: "#8001148D"
     readonly property color unvisitedCell: "transparent"
-    readonly property color solutionPathCell: "#800A852B"
+    readonly property color solutionPathCell1: "#800A852B"
+    readonly property color solutionPathCell2: "#805B0971"
+    readonly property color solutionPathCell3: "#80E60F0F"
     
 }
