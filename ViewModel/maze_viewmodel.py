@@ -1,6 +1,6 @@
 from PySide6.QtCore import QObject, Slot, QUrl, Signal, Property, QTimer
 from PySide6.QtQml import QmlElement, QmlSingleton
-from Model.ucs import costo_uniforme
+from Model.ucs import UCS
 from Model.dfs import DFS
 from Model.search_status import SearchStatus
 from Model.search_algorithm import SearchAlgorithm
@@ -29,24 +29,18 @@ class MazeViewModel(QObject):
         self._maze = []
         self._maze_original = []
         self._maze_matrix = []
-        self._path_ucs = []
-        self._current_step = 0
         self._flow_panel_visible = True
 
         self._log_text = "Esperando la carga de un laberinto..."
         self._stats = {"costo": "-", "visitados": "-", "frontera": "-", "longitud": "-"}
         self._status_message = "Inactivo"
 
-        self._timer = QTimer(self)
-        self._timer.setInterval(70)
-        self._timer.timeout.connect(self._animation_tick)
-
-        # DFS / Path properties
+        # DFS / UCS properties
         self._path = []
         self._start: tuple[int, int] | None = None
         self._goals: list[tuple[int, int]] = []
         self._running = False
-        self._algorithm: DFS | None = None
+        self._algorithm: SearchAlgorithm | None = None
 
     # --- Propiedades QML ---
     @Property("QVariantList", notify=mazeChanged)
@@ -94,16 +88,12 @@ class MazeViewModel(QObject):
         self._flow_panel_visible = not self._flow_panel_visible
         self.flowPanelVisibleChanged.emit()
 
-    # --- Métodos de Control ---
-    def _stop_animation(self):
-        if self._timer.isActive():
-            self._timer.stop()
-        self._path_ucs.clear()
-        self._current_step = 0
-
     @Slot(QUrl)
     def load_maze(self, file_url):
-        self._stop_animation()
+        self._running = False
+        self._algorithm = None
+        self.runningChanged.emit()
+
         file_path = file_url.toLocalFile()
 
         with open(file_path, "r", encoding="utf-8") as file:
@@ -149,20 +139,16 @@ class MazeViewModel(QObject):
             self.errorOccurred.emit("Error: Se debe cargar un laberinto primero")
             return
 
-        if algorithm_name == 'UCS':
-            self.solve_ucs()
-            return
-
         if self._start is None or not self._goals:
             self.errorOccurred.emit("Error: No hay entrada o metas en el laberinto")
             return
 
-        if algorithm_name == 'DFS':
-            self._algorithm = DFS(
-                self._maze,
-                self._start,
-                self._goals
-            )
+        if algorithm_name == 'UCS':
+            self._algorithm = UCS(self._maze, self._start, self._goals)
+            self._status_message = "Buscando (UCS)"
+        elif algorithm_name == 'DFS':
+            self._algorithm = DFS(self._maze, self._start, self._goals)
+            self._status_message = "Buscando (DFS)"
         else:
             return
 
@@ -170,64 +156,11 @@ class MazeViewModel(QObject):
         self._running = True
         self.pathChanged.emit()
         self.runningChanged.emit()
-
-    @Slot()
-    def solve_ucs(self):
-        if not self._maze_original:
-            self.errorOccurred.emit("Error: Primero debes cargar un laberinto.")
-            return
-
-        self._stop_animation()
-        ruta, costo, stats, logs = costo_uniforme(self._maze_original, recopilar_trazas=True)
-
-        if not ruta:
-            self._status_message = "Sin solución"
-            self._log_text = "\n".join(logs)
-            self.logChanged.emit()
-            self.statsChanged.emit()
-            self.errorOccurred.emit("No se encontró ningún camino hacia la meta.")
-            return
-
-        self._stats = {
-            "costo": str(costo),
-            "visitados": str(stats["nodos_explorados"]),
-            "frontera": str(stats["max_frontera"]),
-            "longitud": str(stats["longitud_ruta"])
-        }
-        self._status_message = "Ruta óptima calculada"
-        self._log_text = "\n".join(logs)
-        self.logChanged.emit()
         self.statsChanged.emit()
 
-        self._maze_matrix = [list(fila) for fila in self._maze_original]
-        self._path_ucs = ruta
-        self._current_step = 0
-        self._timer.start()
-
-    def _animation_tick(self):
-        if not self._path_ucs or self._current_step >= len(self._path_ucs):
-            self._timer.stop()
-            return
-
-        if self._current_step > 0:
-            prev_f, prev_c = self._path_ucs[self._current_step - 1]
-            if self._maze_matrix[prev_f][prev_c] not in ('S', 'G'):
-                self._maze_matrix[prev_f][prev_c] = '*'
-
-        curr_f, curr_c = self._path_ucs[self._current_step]
-        if self._maze_matrix[curr_f][curr_c] not in ('S', 'G'):
-            self._maze_matrix[curr_f][curr_c] = '@'
-
-        if self._current_step == len(self._path_ucs) - 1:
-            if self._current_step > 0:
-                prev_f, prev_c = self._path_ucs[self._current_step - 1]
-                if self._maze_matrix[prev_f][prev_c] not in ('S', 'G'):
-                    self._maze_matrix[prev_f][prev_c] = '*'
-            self._timer.stop()
-
-        self._maze = ["".join(fila) for fila in self._maze_matrix]
-        self.mazeChanged.emit()
-        self._current_step += 1
+        if hasattr(self._algorithm, 'logs'):
+            self._log_text = "\n".join(self._algorithm.logs)
+            self.logChanged.emit()
 
     @Slot()
     def step_search(self):
@@ -242,9 +175,28 @@ class MazeViewModel(QObject):
         self._algorithm.step()
         self.update_path()
 
-        if self._algorithm.status != SearchStatus.SEARCHING:
+        # Actualizar métricas y consola si es UCS
+        if isinstance(self._algorithm, UCS):
+            self._stats = {
+                "costo": str(self._algorithm.costo_total) if self._algorithm.status == SearchStatus.FOUND else str(self._algorithm.costos_g.get(self._algorithm.stack[-1][0].position, 0) if self._algorithm.stack else 0),
+                "visitados": str(self._algorithm.nodos_explorados),
+                "frontera": str(len(self._algorithm.pq)),
+                "longitud": str(len(self._algorithm.stack)) if self._algorithm.stack else "0"
+            }
+            self._log_text = "\n".join(self._algorithm.logs)
+            self.logChanged.emit()
+            self.statsChanged.emit()
+
+        if self._algorithm.status == SearchStatus.FOUND:
+            self._status_message = "¡Meta Alcanzada!"
             self._running = False
             self.runningChanged.emit()
+            self.statsChanged.emit()
+        elif self._algorithm.status == SearchStatus.NOT_FOUND:
+            self._status_message = "Sin solución"
+            self._running = False
+            self.runningChanged.emit()
+            self.statsChanged.emit()
 
     def update_path(self):
         if self._algorithm is None:
@@ -262,3 +214,4 @@ class MazeViewModel(QObject):
                 self._path[node.row][node.column] = PATH
 
         self.pathChanged.emit()
+

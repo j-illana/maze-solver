@@ -1,149 +1,185 @@
 import heapq
-from typing import List, Tuple, Optional, Dict
+from typing import Dict, List, Tuple
+from Model.direction import DIRECTIONS
+from Model.node import Node
+from Model.search_algorithm import SearchAlgorithm
+from Model.search_status import SearchStatus
 
-# Costo de desplazamiento por tipo de celda (g(n))
 COSTOS_TERRENO: Dict[str, int] = {
-    '.': 1,   # Camino libre
-    ',': 5,   # Terreno accidentado
-    '~': 10,  # Agua / Pantano
-    'S': 0,   # Casilla origen
-    'G': 1    # Meta
+    '.': 1,
+    ',': 5,
+    '~': 10,
+    'S': 0,
+    'G': 1
 }
 
-MOVIMIENTOS: List[Tuple[int, int]] = [
-    (-1, 0),  # Arriba
-    (1, 0),   # Abajo
-    (0, -1),  # Izquierda
-    (0, 1)    # Derecha
-]
+class UCS(SearchAlgorithm):
+    def __init__(self, maze: list[str], start: tuple[int, int], goals: list[tuple[int, int]]):
+        super().__init__(maze, start, goals)
 
+        self.visited_nodes: set[Node] = set()
+        self.closed_positions: set[tuple[int, int]] = set()
+        
+        # Guardamos el mejor costo g(n) conocido para cada posición
+        self.costos_g: dict[tuple[int, int], int] = {}
+        
+        # Diccionario para reconstruir el camino: nodo -> nodo_padre
+        self.padres: dict[Node, Node] = {}
 
-def encontrar_posicion(laberinto: List[str], simbolo: str) -> Optional[Tuple[int, int]]:
-    """Encuentra las coordenadas (fila, columna) del símbolo buscado."""
-    for f, fila in enumerate(laberinto):
-        for c, celda in enumerate(fila):
-            if celda == simbolo:
-                return (f, c)
-    return None
+        # Contador secuencial para desempate en min-heap
+        self.counter = 0
 
+        start_node = self.graph.add_node(*self.start)
+        self.costos_g[self.start] = 0
+        
+        # Priority Queue (Min-Heap): (costo_g, contador, node)
+        self.pq: list[tuple[int, int, Node]] = []
+        heapq.heappush(self.pq, (0, self.counter, start_node))
 
-def costo_uniforme(laberinto: List[str], recopilar_trazas: bool = False) -> Tuple:
-    """
-    Algoritmo de Búsqueda de Costo Uniforme (UCS).
-    Explora caminos utilizando una cola de prioridad (min-heap) ordenada por costo acumulado g(n).
-    
-    Returns:
-        Si recopilar_trazas=False: (ruta_optima, costo_total)
-        Si recopilar_trazas=True:  (ruta_optima, costo_total, stats_dict, logs_list)
-    """
-    stats = {
-        "costo_total": float('inf'),
-        "longitud_ruta": 0,
-        "nodos_explorados": 0,
-        "max_frontera": 0,
-        "total_inserciones": 0,
-        "pasos_totales": 0
-    }
-    logs: List[str] = []
+        # Estadísticas
+        self.max_frontera = 1
+        self.nodos_explorados = 0
+        self.total_inserciones = 1
+        self.pasos = 0
+        self.costo_total = 0
 
-    if not laberinto or not laberinto[0]:
-        if recopilar_trazas:
-            logs.append("[ERROR] Laberinto vacío o inválido.")
-            return None, float('inf'), stats, logs
-        return None, float('inf')
+        # Formato inicial del log
+        self.logs: list[str] = [
+            "Traza del algoritmo UCS",
+            "--------------------------------------------------",
+            "Paso 0:",
+            f"  Frontera : {{{self._formatear_nodo(start_node, 0)}}}",
+            f"  Extrae   : {self._formatear_pos(self.start)} (g = 0)",
+            "--------------------------------------------------"
+        ]
 
-    filas, columnas = len(laberinto), len(laberinto[0])
-    inicio = encontrar_posicion(laberinto, 'S')
-    meta = encontrar_posicion(laberinto, 'G')
+        self.status = (
+            SearchStatus.FOUND if self.start in self.goals
+            else SearchStatus.SEARCHING
+        )
 
-    if not inicio or not meta:
-        if recopilar_trazas:
-            logs.append("[ERROR] Puntos de inicio 'S' o meta 'G' no encontrados.")
-            return None, float('inf'), stats, logs
-        return None, float('inf')
+    def _formatear_pos(self, pos: tuple[int, int]) -> str:
+        r, c = pos
+        simb = self.maze[r][c]
+        if simb == 'S':
+            return f"S({r},{c})"
+        elif simb == 'G':
+            return f"G({r},{c})"
+        return f"({r},{c})"
 
-    if recopilar_trazas:
-        logs.extend([
-            "=" * 50,
-            "         INICIO DE BÚSQUEDA UCS (UNIFORM COST)",
-            "=" * 50,
-            f"Dimensiones: {filas} filas x {columnas} columnas",
-            f"Punto de Salida 'S': {inicio} | Meta 'G': {meta}",
-            "-" * 50,
-            f"[COLA INIT] Insertado origen S{inicio} con g(n)=0"
-        ])
+    def _formatear_nodo(self, node: Node, g: int) -> str:
+        return f"({self._formatear_pos(node.position)}, {g})"
 
-    # Frontera (Min-Heap): (costo_acumulado_g, (fila, col), ruta_actual)
-    frontera = [(0, inicio, [inicio])]
-    stats["total_inserciones"] = 1
-    stats["max_frontera"] = 1
+    def _obtener_frontera_str(self, limite: int = 5) -> str:
+        # Ordenamos los elementos actuales de la cola por costo
+        elementos_ordenados = sorted(self.pq, key=lambda x: x[0])
+        items = [f"({self._formatear_pos(node.position)}, {g})" for g, _, node in elementos_ordenados[:limite]]
+        if len(elementos_ordenados) > limite:
+            items.append(f"... (+{len(elementos_ordenados) - limite} más)")
+        return "{" + ", ".join(items) + "}"
 
-    visitados = set()
-    paso = 0
+    def step(self):
+        if self.status != SearchStatus.SEARCHING:
+            return
 
-    while frontera:
-        stats["max_frontera"] = max(stats["max_frontera"], len(frontera))
-        costo_act, (f_act, c_act), ruta_act = heapq.heappop(frontera)
-        paso += 1
-        stats["pasos_totales"] = paso
+        if not self.pq:
+            self.status = SearchStatus.NOT_FOUND
+            self.logs.extend([
+                "\n[Sin Solución]",
+                "  La frontera se vació sin encontrar ninguna meta."
+            ])
+            return
 
-        if recopilar_trazas:
-            simb = laberinto[f_act][c_act]
-            logs.append(f"\n[PASO {paso}] Pop -> Casilla ({f_act}, {c_act}) ['{simb}'] | g(n) = {costo_act}")
+        # Snapshot de la frontera antes de extraer
+        frontera_antes_str = self._obtener_frontera_str()
 
-        # Descarte diferido: ignorar si ya fue explorada con menor costo
-        if (f_act, c_act) in visitados:
-            if recopilar_trazas:
-                logs.append(f"  -> [DESCARTE DIFERIDO] ({f_act}, {c_act}) ya visitada. Omitiendo.")
-            continue
+        costo_act, _, current_node = heapq.heappop(self.pq)
+        pos_act = current_node.position
 
-        visitados.add((f_act, c_act))
-        stats["nodos_explorados"] = len(visitados)
+        # Descarte diferido si ya cerramos esta posición
+        if pos_act in self.closed_positions:
+            return
 
-        # Prueba de Meta al extraer del montículo
-        if (f_act, c_act) == meta:
-            stats["costo_total"] = costo_act
-            stats["longitud_ruta"] = len(ruta_act)
-            if recopilar_trazas:
-                logs.extend([
-                    "\n" + "=" * 50,
-                    "            ¡META 'G' ALCANZADA!",
-                    "=" * 50,
-                    f"  * Costo Óptimo Total g(Meta): {costo_act}",
-                    f"  * Longitud del Camino: {len(ruta_act)} celdas",
-                    f"  * Nodos Cerrados (Visitados): {len(visitados)}",
-                    f"  * Tamaño Máx. Frontera: {stats['max_frontera']}",
-                    f"  * Inserciones Totales en Cola: {stats['total_inserciones']}",
-                    "=" * 50
-                ])
-                return ruta_act, costo_act, stats, logs
-            return ruta_act, costo_act
+        self.pasos += 1
+        self.max_frontera = max(self.max_frontera, len(self.pq) + 1)
 
-        # Expansión de vecinos
-        for df, dc in MOVIMIENTOS:
-            f_vec, c_vec = f_act + df, c_act + dc
+        self.closed_positions.add(pos_act)
+        self.visited_nodes.add(current_node)
+        self.nodos_explorados = len(self.visited_nodes)
 
-            if 0 <= f_vec < filas and 0 <= c_vec < columnas:
-                simb_vec = laberinto[f_vec][c_vec]
-                if simb_vec != '#' and (f_vec, c_vec) not in visitados:
-                    paso_costo = COSTOS_TERRENO.get(simb_vec, 1)
-                    nuevo_costo = costo_act + paso_costo
-                    nueva_ruta = ruta_act + [(f_vec, c_vec)]
+        # Actualizar stack con la ruta actual para renderizado en UI
+        self.stack = self._reconstruir_ruta_nodos(current_node)
 
-                    heapq.heappush(frontera, (nuevo_costo, (f_vec, c_vec), nueva_ruta))
-                    stats["total_inserciones"] += 1
+        # Registro del paso actual
+        paso_log = [
+            f"\nPaso {self.pasos}:",
+            f"  Frontera : {frontera_antes_str}",
+            f"  Extrae   : {self._formatear_pos(pos_act)} (g = {costo_act})"
+        ]
 
-                    if recopilar_trazas:
-                        logs.append(f"  -> [+] Push Vecino ({f_vec}, {c_vec}) ['{simb_vec}'] (+{paso_costo}) -> g(n) = {nuevo_costo}")
+        # Comprobar meta al extraer de la cola de prioridad
+        if pos_act in self.goals:
+            self.status = SearchStatus.FOUND
+            self.costo_total = costo_act
+            ruta_str = " -> ".join(self._formatear_pos(node.position) for node, _ in self.stack)
+            
+            paso_log.append("  -> ¡Es estado objetivo! Termina la búsqueda.")
+            paso_log.extend([
+                "\n==================================================",
+                "Solución Final",
+                "==================================================",
+                f"  Meta alcanzada : {self._formatear_pos(pos_act)}",
+                f"  Ruta óptima    : {ruta_str}",
+                f"  Costo total g  : {costo_act}",
+                f"  Longitud ruta  : {len(self.stack)} pasos",
+                f"  Nodos cerrados : {self.nodos_explorados}",
+                f"  Máx. frontera  : {self.max_frontera}",
+                "=================================================="
+            ])
+            self.logs.extend(paso_log)
+            return
 
-        if recopilar_trazas:
-            top_cola = [(item[0], item[1]) for item in sorted(frontera, key=lambda x: x[0])[:5]]
-            logs.append(f"  -> [ESTADO COLA] {len(frontera)} elems. Top: {top_cola}")
+        # Generar vecinos
+        generados = []
+        for direction in DIRECTIONS:
+            neighbor = self.discover_neighbor(current_node, direction)
+            if neighbor is None:
+                continue
 
-    if recopilar_trazas:
-        logs.append("\n[FIN] Frontera vacía: la meta es inalcanzable.")
-        return None, float('inf'), stats, logs
-    return None, float('inf')
+            pos_vec = neighbor.position
+            if pos_vec in self.closed_positions:
+                continue
 
+            simb_vec = self.maze[neighbor.row][neighbor.column]
+            costo_paso = COSTOS_TERRENO.get(simb_vec, 1)
+            nuevo_costo = costo_act + costo_paso
 
+            # Si encontramos un mejor camino a este vecino (o primera vez visto)
+            if pos_vec not in self.costos_g or nuevo_costo < self.costos_g[pos_vec]:
+                es_actualizacion = pos_vec in self.costos_g
+                self.costos_g[pos_vec] = nuevo_costo
+                self.padres[neighbor] = current_node
+                self.counter += 1
+                heapq.heappush(self.pq, (nuevo_costo, self.counter, neighbor))
+                self.total_inserciones += 1
+                
+                info_gen = f"{self._formatear_pos(pos_vec)} con costo {costo_act} + {costo_paso} = {nuevo_costo}"
+                if es_actualizacion:
+                    info_gen += " (actualiza ruta)"
+                generados.append(info_gen)
 
+        if generados:
+            paso_log.append("  Genera   : " + ", ".join(generados))
+        else:
+            paso_log.append("  Genera   : (sin vecinos nuevos)")
+
+        self.logs.extend(paso_log)
+
+    def _reconstruir_ruta_nodos(self, node: Node) -> list[tuple[Node, int]]:
+        ruta = []
+        curr: Node | None = node
+        while curr is not None:
+            ruta.append((curr, 0))
+            curr = self.padres.get(curr)
+        ruta.reverse()
+        return ruta

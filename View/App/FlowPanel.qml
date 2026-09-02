@@ -139,8 +139,8 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            radius: 8
-            color: "#1E2631"
+            radius: 6
+            color: "#1B222C"
             border.color: Colors.buttonHover
             border.width: 1
             clip: true
@@ -148,22 +148,22 @@ Rectangle {
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 10
-                spacing: 8
+                spacing: 6
 
                 RowLayout {
                     Layout.fillWidth: true
 
                     Text {
-                        text: "Flujo del Programa & Cola de Prioridad"
+                        text: "Logs de Ejecución"
                         font.family: "JetBrains Mono"
-                        font.pixelSize: 12
+                        font.pixelSize: 11
                         font.bold: true
                         color: Colors.mazeCellEmpty1
                         Layout.fillWidth: true
                     }
 
                     Text {
-                        text: "min-heap: g(n)"
+                        text: "min-heap g(n)"
                         font.family: "JetBrains Mono"
                         font.pixelSize: 10
                         color: Colors.mazeCellEmpty2
@@ -186,10 +186,10 @@ Rectangle {
                         color: "#D6DEEB"
                         background: null
                         wrapMode: TextEdit.Wrap
-                        topPadding: 4
-                        leftPadding: 4
-                        rightPadding: 4
-                        bottomPadding: 4
+                        topPadding: 2
+                        leftPadding: 2
+                        rightPadding: 2
+                        bottomPadding: 2
 
                         onTextChanged: cursorPosition = text.length
                     }
