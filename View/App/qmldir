@@ -7,3 +7,4 @@ ContentArea 1.0 ContentArea.qml
 MazeGrid 1.0 MazeGrid.qml
 MazeCell 1.0 MazeCell.qml
 MazeWrapper 1.0 MazeWrapper.qml
+FlowPanel 1.0 FlowPanel.qml

@@ -1,4 +1,4 @@
-from PySide6.QtCore import QObject, Slot, QUrl, Signal, Property
+from PySide6.QtCore import QObject, Slot, QUrl, Signal, Property, QTimer
 from PySide6.QtQml import QmlElement, QmlSingleton
 from Model.ucs import costo_uniforme
 
@@ -9,40 +9,100 @@ QML_IMPORT_MAJOR_VERSION = 1
 @QmlSingleton
 class MazeViewModel(QObject):
     mazeChanged = Signal()
+    logChanged = Signal()
+    statsChanged = Signal()
+    flowPanelVisibleChanged = Signal()
     errorOccurred = Signal(str)
 
     def __init__(self):
         super().__init__()
         self._maze = []
         self._maze_original = []
+        self._maze_matrix = []
+        self._path = []
+        self._current_step = 0
+        self._flow_panel_visible = False
 
+        self._log_text = "Esperando la carga de un laberinto..."
+        self._stats = {"costo": "-", "visitados": "-", "frontera": "-", "longitud": "-"}
+        self._status_message = "Inactivo"
+
+        self._timer = QTimer(self)
+        self._timer.setInterval(70)
+        self._timer.timeout.connect(self._animation_tick)
+
+    # --- Propiedades QML ---
     @Property("QVariantList", notify=mazeChanged)
     def maze(self):
         return self._maze
 
+    @Property(str, notify=logChanged)
+    def logText(self):
+        return self._log_text
+
+    @Property(bool, notify=flowPanelVisibleChanged)
+    def flowPanelVisible(self):
+        return self._flow_panel_visible
+
+    @Property(str, notify=statsChanged)
+    def statsCosto(self):
+        return self._stats["costo"]
+
+    @Property(str, notify=statsChanged)
+    def statsVisitados(self):
+        return self._stats["visitados"]
+
+    @Property(str, notify=statsChanged)
+    def statsFrontera(self):
+        return self._stats["frontera"]
+
+    @Property(str, notify=statsChanged)
+    def statsLongitud(self):
+        return self._stats["longitud"]
+
+    @Property(str, notify=statsChanged)
+    def statusMessage(self):
+        return self._status_message
+
+    @Slot()
+    def toggle_flow_panel(self):
+        self._flow_panel_visible = not self._flow_panel_visible
+        self.flowPanelVisibleChanged.emit()
+
+    # --- Métodos de Control ---
+    def _stop_animation(self):
+        if self._timer.isActive():
+            self._timer.stop()
+        self._path.clear()
+        self._current_step = 0
+
     @Slot(QUrl)
     def load_maze(self, file_url):
+        self._stop_animation()
         file_path = file_url.toLocalFile()
 
         with open(file_path, "r", encoding="utf-8") as file:
             maze = file.read().splitlines()
 
-        if len(maze) > 15:
-            self.errorOccurred.emit(
-                "Error: El laberinto no puede tener más de 15 filas"
-            )
+        if len(maze) > 15 or any(len(r) > 25 for r in maze):
+            self.errorOccurred.emit("Error: El laberinto excede el tamaño máximo (15x25).")
             return
-
-        for row in maze:
-            if len(row) > 25:
-                self.errorOccurred.emit(
-                    "Error: El laberinto no puede tener más de 25 columnas"
-                )
-                return
 
         self._maze_original = list(maze)
         self._maze = list(maze)
         self.mazeChanged.emit()
+
+        filename = file_path.replace("\\", "/").split("/")[-1]
+        self._stats = {"costo": "-", "visitados": "-", "frontera": "-", "longitud": "-"}
+        self._status_message = "Laberinto cargado"
+        self._log_text = (
+            f"[SISTEMA] Laberinto cargado exitosamente:\n"
+            f"  * Archivo: {filename}\n"
+            f"  * Dimensiones: {len(maze)} filas x {len(maze[0]) if maze else 0} columnas\n"
+            f"  * Presiona 'Resolver laberinto' para iniciar UCS."
+        )
+        self.logChanged.emit()
+        self.statsChanged.emit()
 
     @Slot()
     def solve_ucs(self):
@@ -50,17 +110,58 @@ class MazeViewModel(QObject):
             self.errorOccurred.emit("Error: Primero debes cargar un laberinto.")
             return
 
-        ruta, costo = costo_uniforme(self._maze_original)
+        self._stop_animation()
+        ruta, costo, stats, logs = costo_uniforme(self._maze_original, recopilar_trazas=True)
 
         if not ruta:
+            self._status_message = "Sin solución"
+            self._log_text = "\n".join(logs)
+            self.logChanged.emit()
+            self.statsChanged.emit()
             self.errorOccurred.emit("No se encontró ningún camino hacia la meta.")
             return
 
-        # Generar matriz con la ruta marcada (sin sobreescribir 'S' ni 'G')
-        maze_matriz = [list(fila) for fila in self._maze_original]
-        for f, c in ruta:
-            if maze_matriz[f][c] not in ('S', 'G'):
-                maze_matriz[f][c] = '*'
+        self._stats = {
+            "costo": str(costo),
+            "visitados": str(stats["nodos_explorados"]),
+            "frontera": str(stats["max_frontera"]),
+            "longitud": str(stats["longitud_ruta"])
+        }
+        self._status_message = "Ruta óptima calculada"
+        self._log_text = "\n".join(logs)
+        self.logChanged.emit()
+        self.statsChanged.emit()
 
-        self._maze = ["".join(fila) for fila in maze_matriz]
-        self.mazeChanged.emit()
+        # Preparar animación incremental de la serpiente
+        self._maze_matrix = [list(fila) for fila in self._maze_original]
+        self._path = ruta
+        self._current_step = 0
+        self._timer.start()
+
+    def _animation_tick(self):
+        if not self._path or self._current_step >= len(self._path):
+            self._timer.stop()
+            return
+
+        # 1. Convertir el paso anterior en rastro ('*')
+        if self._current_step > 0:
+            prev_f, prev_c = self._path[self._current_step - 1]
+            if self._maze_matrix[prev_f][prev_c] not in ('S', 'G'):
+                self._maze_matrix[prev_f][prev_c] = '*'
+
+        # 2. Marcar la cabeza actual ('@')
+        curr_f, curr_c = self._path[self._current_step]
+        if self._maze_matrix[curr_f][curr_c] not in ('S', 'G'):
+            self._maze_matrix[curr_f][curr_c] = '@'
+
+        # 3. Fin de la ruta: meta alcanzada
+        if self._current_step == len(self._path) - 1:
+            if self._current_step > 0:
+                prev_f, prev_c = self._path[self._current_step - 1]
+                if self._maze_matrix[prev_f][prev_c] not in ('S', 'G'):
+                    self._maze_matrix[prev_f][prev_c] = '*'
+            self._timer.stop()
+
+        self._maze = ["".join(fila) for fila in self._maze_matrix]
+        self.mazeChanged.emit()
+        self._current_step += 1

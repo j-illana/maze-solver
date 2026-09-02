@@ -12,9 +12,23 @@ files = [
     "view/App/MazeCell.qml",
     "view/App/MazeGrid.qml",
     "view/App/MazeWrapper.qml",
+    "view/App/FlowPanel.qml",
     "view/App/qmldir",
     "view/App/SideBar.qml",
     "view/App/SideBarButton.qml",
     "view/Style/Colors.qml",
     "view/Style/qmldir"
+]
+
+[tool.pyright]
+reportMissingImports = "none"
+extraPaths = [
+    "C:/Python314/Lib/site-packages",
+    "C:/Users/Brando WhiteNoise/AppData/Roaming/Python/Python314/site-packages"
+]
+
+[tool.pyrefly]
+site-packages = [
+    "C:/Python314/Lib/site-packages",
+    "C:/Users/Brando WhiteNoise/AppData/Roaming/Python/Python314/site-packages"
 ]

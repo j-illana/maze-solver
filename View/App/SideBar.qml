@@ -18,7 +18,7 @@ Rectangle {
     }
 
     ColumnLayout {
-        anchors.top: parent.top1
+        anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
         spacing: 0
@@ -45,6 +45,14 @@ Rectangle {
             expanded: root.expanded
 
             onClicked: MazeViewModel.solve_ucs()
+        }
+
+        SideBarButton {
+            icon.source: "../../assets/icons/terminal.svg"
+            text: "Flujo del programa"
+            expanded: root.expanded
+
+            onClicked: MazeViewModel.toggle_flow_panel()
         }
 
         SideBarButton {

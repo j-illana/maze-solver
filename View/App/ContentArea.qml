@@ -1,45 +1,29 @@
 import QtQuick
 import QtQuick.Layouts
+import QmlModules.ViewModel
 import View.Style
 
-GridLayout {
-    rows: 2
-    columns: 2
-
-    rowSpacing: 0
-    columnSpacing: 0
+RowLayout {
+    id: root
+    spacing: 0
 
     MazeWrapper {
-        Layout.row: 0
-        Layout.column: 0
-
         Layout.fillWidth: true
         Layout.fillHeight: true
-        Layout.preferredWidth: 3
-        Layout.preferredHeight: 2
     }
 
-    Rectangle {
-        Layout.row: 0
-        Layout.column: 1
-
-        Layout.rowSpan: 2
-
-        Layout.fillWidth: true
+    FlowPanel {
+        id: flowPanel
         Layout.fillHeight: true
-        Layout.preferredWidth: 1
+        Layout.preferredWidth: MazeViewModel.flowPanelVisible ? Math.min(root.width * 0.45, 550) : 0
+        visible: Layout.preferredWidth > 0
+        clip: true
 
-        color: Colors.background
-    }
-
-    Rectangle {
-        Layout.row: 1
-        Layout.column: 0
-
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        Layout.preferredHeight: 1
-
-        color: Colors.background
+        Behavior on Layout.preferredWidth {
+            NumberAnimation {
+                duration: 250
+                easing.type: Easing.InOutQuad
+            }
+        }
     }
 }

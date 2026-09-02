@@ -6,13 +6,12 @@ import QmlModules.ViewModel
 Grid {
     id: root
 
-    rows: 15
-    columns: 25
-
     readonly property var maze: MazeViewModel.maze
 
+    columns: (maze.length > 0 && maze[0].length > 0) ? maze[0].length : 1
+
     Repeater {
-        model: root.rows * root.columns 
+        model: maze.length > 0 ? (maze.length * root.columns) : 0
 
         MazeCell {
             required property int index
@@ -20,20 +19,12 @@ Grid {
             property int row: Math.floor(index / root.columns)
             property int column: index % root.columns
 
-            property string cellEmptyColor:
-                (row + column) % 2 === 0
-                    ? "1"
-                    : "2"
-
-            property bool hasMazeData:
-                (row < root.maze.length) && (column < root.maze[row].length)
-
             width: root.width / root.columns
-            height: root.height / root.rows
+            height: root.height / (maze.length > 0 ? maze.length : 1)
 
-            cellType: hasMazeData
+            cellType: (row < root.maze.length && column < root.maze[row].length)
                 ? root.maze[row][column]
-                : cellEmptyColor
+                : "."
         }
     }
 }
