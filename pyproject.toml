@@ -21,7 +21,6 @@ files = [
     "view/App/SideBar.qml",
     "view/App/SideBarButton.qml",
     "view/App/SimulationButton.qml",
-    "view/App/SolveMazeView.qml",
     "view/Style/Colors.qml",
     "view/Style/qmldir"
 ]

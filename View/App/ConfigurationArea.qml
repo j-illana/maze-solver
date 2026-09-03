@@ -37,6 +37,22 @@ Item {
                 Layout.fillHeight: true
                 Layout.preferredHeight: 1
 
+                Text {
+                    text: "Resolver laberinto"
+
+                    anchors.centerIn: parent
+
+                    color: "white"
+                    font.pixelSize: 20
+                    font.bold: true
+                }
+            }
+
+            Item {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.preferredHeight: 1
+
                 AlgorithmSelector {
                     id: algorithmSelector
                     anchors.left: parent.left
@@ -77,6 +93,23 @@ Item {
                     }
                 }
             }
+
+            Item {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.preferredHeight: 1
+
+                SimulationButton {
+                    text: "Mostrar árbol de búsqueda"
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    onClicked: {
+                        MazeViewModel.show_search_tree()
+                    }
+                }
+            }
         }
 
         ColumnLayout {
@@ -89,8 +122,24 @@ Item {
                 Layout.fillHeight: true
                 Layout.preferredHeight: 1
 
+                Text {
+                    text: "Comparar algoritmos"
+
+                    anchors.centerIn: parent
+
+                    color: "white"
+                    font.pixelSize: 20
+                    font.bold: true
+                }
+            }
+
+            Item {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.preferredHeight: 1
+
                 AlgorithmSelector {
-                    id: algorithmCheckbox
+                    id: comparationSelector
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
@@ -113,9 +162,8 @@ Item {
 
                         onClicked: {
                             MazeViewModel.solve_algorithm(
-                                algorithmCheckbox.currentText
+                                comparationSelector.currentText
                             )
-                            MazeViewModel.show_search_tree()
                         }
                     }
 
@@ -128,6 +176,23 @@ Item {
                             MazeViewModel.reset_path()
                             MazeViewModel.reset_comparison_paths()
                         }
+                    }
+                }
+            }
+
+            Item {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.preferredHeight: 1
+
+                SimulationButton {
+                    text: "Mostrar árbol de búsqueda"
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    onClicked: {
+                        MazeViewModel.show_search_tree()
                     }
                 }
             }
