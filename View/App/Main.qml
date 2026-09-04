@@ -22,8 +22,8 @@ ApplicationWindow {
             id: sideBar
             Layout.fillHeight: true
 
-            onSolveMazeRequested: contentArea.currentIndex = 0
-            onCompareAlgorithmsRequested: contentArea.currentIndex = 1
+            onSolveMazeRequested: contentArea.currentPage = 0
+            onCompareAlgorithmsRequested: contentArea.currentPage = 1
         }
 
         ContentArea {

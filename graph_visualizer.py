@@ -5,11 +5,13 @@ from Model.search_algorithm import SearchAlgorithm
 
 
 def calculate_tree_positions(algorithm: SearchAlgorithm):
+    # Crea una lista de hijos para cada nodo visitado
     children = {
         node: []
         for node in algorithm.visited_order
     }
 
+    # Construye la relación padre -> hijos usando el árbol de búsqueda
     for node in algorithm.visited_order:
         parent = algorithm.parents[node]
 
@@ -24,10 +26,12 @@ def calculate_tree_positions(algorithm: SearchAlgorithm):
 
         node_children = children[node]
 
+        # Las hojas se colocan de izquierda a derecha
         if not node_children:
             x = next_x
             next_x += 1
 
+        # Los padres se centran respecto a sus hijos
         else:
             child_positions = []
 
@@ -36,7 +40,6 @@ def calculate_tree_positions(algorithm: SearchAlgorithm):
                     child,
                     depth + 1
                 )
-
                 child_positions.append(child_x)
 
             x = (
@@ -44,6 +47,7 @@ def calculate_tree_positions(algorithm: SearchAlgorithm):
                 + child_positions[-1]
             ) / 2
 
+        # La profundidad determina la posición vertical
         positions[node.position] = (
             x,
             -depth
@@ -51,6 +55,7 @@ def calculate_tree_positions(algorithm: SearchAlgorithm):
 
         return x
 
+    # Empieza a calcular posiciones desde el nodo inicial
     position_node(
         algorithm.start_node,
         0
@@ -58,14 +63,17 @@ def calculate_tree_positions(algorithm: SearchAlgorithm):
 
     return positions
 
+
 def show_search_tree(
     algorithm: SearchAlgorithm
 ):
     tree = nx.DiGraph()
 
+    # Agrega al árbol todos los nodos que fueron visitados
     for node in algorithm.visited_order:
         tree.add_node(node.position)
 
+    # Agrega las conexiones padre -> hijo
     for node in algorithm.visited_order:
         parent = algorithm.parents[node]
 
@@ -75,17 +83,20 @@ def show_search_tree(
                 node.position
             )
 
+    # Calcula una distribución jerárquica para los nodos
     positions = calculate_tree_positions(
         algorithm
     )
 
     solution_path = algorithm.get_solution_path()
 
+    # Guarda las posiciones que forman parte de la solución
     solution_nodes = {
         node.position
         for node in solution_path
     }
 
+    # Resalta en verde los nodos que pertenecen al camino solución
     node_colors = [
         "green"
         if node in solution_nodes
@@ -93,6 +104,7 @@ def show_search_tree(
         for node in tree.nodes
     ]
 
+    # Crea y dibuja la ventana del árbol
     plt.figure(figsize=(12, 8))
 
     nx.draw(
@@ -110,6 +122,5 @@ def show_search_tree(
         f"{type(algorithm).__name__}"
     )
 
-    plt.tight_layout()
-
+    # Muestra la ventana sin bloquear la aplicación principal
     plt.show(block=False)

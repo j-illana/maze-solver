@@ -24,6 +24,8 @@ class MazeViewModel(QObject):
     bfsPathChanged = Signal()
     ucsPathChanged = Signal()
     runningChanged = Signal()
+    resultsChanged = Signal()
+    elapsedTimeChanged = Signal()
     errorOccurred = Signal(str)
 
     def __init__(self):
@@ -37,6 +39,11 @@ class MazeViewModel(QObject):
         self._goals: list[tuple[int, int]] = []
         self._running = False
         self._algorithm: SearchAlgorithm | None = None
+        self._algorithmName = ""
+        self._stepsNumber = 0
+        self._pathCost = 0
+        self._visitedNodesCount = 0
+        self._elapsed_time: float = 0.0
 
     @Property("QVariantList", notify=mazeChanged)
     def maze(self):
@@ -61,6 +68,26 @@ class MazeViewModel(QObject):
     @Property(bool, notify=runningChanged)
     def running(self):
         return self._running
+
+    @Property(str, notify=resultsChanged)
+    def algorithmName(self):
+        return self._algorithmName
+
+    @Property(int, notify=resultsChanged)
+    def stepsNumber(self):
+        return self._stepsNumber
+
+    @Property(int, notify=resultsChanged)
+    def pathCost(self):
+        return self._pathCost
+
+    @Property(int, notify=resultsChanged)
+    def visitedNodesCount(self):
+        return self._visitedNodesCount
+
+    @Property(float, notify=elapsedTimeChanged)
+    def elapsedTime(self):
+        return self._elapsed_time
 
 
     @Slot()
@@ -229,11 +256,12 @@ class MazeViewModel(QObject):
 
         end_time = time.perf_counter()
 
-        elapsed_time = end_time - start_time
+        self._elapsed_time = end_time - start_time
+        self.elapsedTimeChanged.emit()
 
         self.update_path()
         self.show_results()
-        print(f"Tiempo de ejecución: {elapsed_time} segundos")
+        print(f"Tiempo de ejecución: {self._elapsed_time} segundos")
         print("-----------------------------------------")
 
 
@@ -285,20 +313,24 @@ class MazeViewModel(QObject):
         if self._algorithm is None:
             return
 
-        algorithm_name = type(self._algorithm).__name__
         solution_path = self._algorithm.get_solution_path()
-        steps_number = max(0, len(solution_path) - 1)
         visited_order = self._algorithm.visited_order
         visited_nodes = [node.position for node in visited_order]
-        cost = self._algorithm.get_path_cost()
+
+        self._algorithmName = type(self._algorithm).__name__
+        self._stepsNumber = max(0, len(solution_path) - 1)
+        self._pathCost = self._algorithm.get_path_cost()
+        self._visitedNodesCount = len(visited_nodes)
+
+        self.resultsChanged.emit()
 
         print("\n-----------------------------------------")
         print("Resultados")
         print("-----------------------------------------")
-        print(f"Algoritmo elegido: {algorithm_name}")
+        print(f"Algoritmo elegido: {self._algorithmName}")
         print(f"Nodo de salida: {self._start}")
         print(f"Nodos de meta: {self._goals}")
-        print(f"Longitud del camino: {steps_number}")
-        print(f"Costo total del camino: {cost}")
-        print(f"Cantidad de nodos visitados: {len(visited_nodes)}")
+        print(f"Longitud del camino: {self._stepsNumber}")
+        print(f"Costo total del camino: {self._pathCost}")
+        print(f"Cantidad de nodos visitados: {self._visitedNodesCount}")
         print(f"Nodos visitados: {visited_nodes}")
